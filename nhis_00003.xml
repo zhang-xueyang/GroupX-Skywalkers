@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="ipums-ddi-xslt.xsl"?>
-<codeBook ID="ddi2-8453a3f0-b0cd-013d-8697-02420a1c0306-nhis_00003.dat-nhis.ipums.org" version="2.5" xmlns="ddi:codebook:2_5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="ddi:codebook:2_5 http://www.ddialliance.org/Specification/DDI-Codebook/2.5/XMLSchema/codebook.xsd">
+<codeBook ID="ddi2-8453a3f0-b0cd-013d-8697-02420a1c0306-nhis_00004.dat-nhis.ipums.org" version="2.5" xmlns="ddi:codebook:2_5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="ddi:codebook:2_5 http://www.ddialliance.org/Specification/DDI-Codebook/2.5/XMLSchema/codebook.xsd">
   <docDscr>
     <citation>
       <titlStmt>
         <titl>Codebook for an Integrated Health Interview Series Data Extract</titl>
-        <subTitl>DDI 2.5 metadata describing the extract file  'nhis_00003.dat'</subTitl>
-        <IDNo>ddi2-8453a3f0-b0cd-013d-8697-02420a1c0306-nhis_00003.dat-nhis.ipums.org</IDNo>
+        <subTitl>DDI 2.5 metadata describing the extract file  'nhis_00004.dat'</subTitl>
+        <IDNo>ddi2-8453a3f0-b0cd-013d-8697-02420a1c0306-nhis_00004.dat-nhis.ipums.org</IDNo>
       </titlStmt>
       <rspStmt>
         <AuthEnty affiliation="University of Minnesota">IPUMS</AuthEnty>
@@ -24,7 +24,7 @@
   <stdyDscr>
     <citation>
       <titlStmt>
-        <titl>User Extract nhis_00003.dat</titl>
+        <titl>User Extract nhis_00004.dat</titl>
       </titlStmt>
       <rspStmt>
         <AuthEnty affiliation="University of Minnesota">IPUMS</AuthEnty>
@@ -146,10 +146,12 @@ Furthermore, users of NHIS data must agree to abide by the conditions of use. Us
         <disclaimer>The user of the data acknowledges that the original collector of the data, the authorized distributor of the data, and the relevant funding agency bear no responsibility for use of the data or for interpretations or inferences based upon such uses.</disclaimer>
       </useStmt>
     </dataAccs>
+    <notes><![CDATA[User-provided description:  Revision of 00003]]></notes>
+    <notes>This extract is a revision of the user's previous extract, ID 42774931.</notes>
   </stdyDscr>
   <fileDscr ID="ExtractData">
     <fileTxt>
-      <fileName>nhis_00003.dat</fileName>
+      <fileName>nhis_00004.dat</fileName>
       <fileCont>Microdata records</fileCont>
       <fileStrc type="rectangular"/>
       <fileType charset="ISO-8859-1">ISO-8859-1 data file</fileType>
@@ -1335,23 +1337,33 @@ In 2021, a dichotomous variable (PDISTRESSK6) was introduced to record whether a
   <concept vocab="IPUMS">Adult Mental Health Variables -- PERSON</concept>
   <varFormat schema="other" type="numeric"/>
 </var>
-<var ID="WORRX" dcml="0" files="ExtractData" intrvl="discrete" name="WORRX">
+<var ID="WORFREQ" dcml="0" files="ExtractData" intrvl="discrete" name="WORFREQ">
   <location EndPos="126" StartPos="126" width="1"/>
-  <labl>Take medication for worried, nervous, or anxious feelings</labl>
-  <txt><![CDATA[Respondents reported whether they took medication for feelings of worry, nervousness, or anxiety.
-
-In 2010, this item was collected for sample adults who completed the Quality of Life supplement (administered to approximately a quarter of sample adults). In 2011-2017, this item was collected for sample adults who completed the Adult Functioning and Disability supplement (administered to a subset of sample adults). Beginning in 2018, this item was included on the sample adult questionnaire.]]></txt>
+  <labl>How often feel worried, nervous, or anxious</labl>
+  <txt><![CDATA[For sample children ages 5-17 and sample adults, WORFREQ reports how often they felt worried, nervous or anxious. Prior to 2019, WORFREQ was not asked of sample children.]]></txt>
   <catgry>
     <catValu>0</catValu>
     <labl>NIU</labl>
   </catgry>
   <catgry>
     <catValu>1</catValu>
-    <labl>No</labl>
+    <labl>Daily</labl>
   </catgry>
   <catgry>
     <catValu>2</catValu>
-    <labl>Yes</labl>
+    <labl>Weekly</labl>
+  </catgry>
+  <catgry>
+    <catValu>3</catValu>
+    <labl>Monthly</labl>
+  </catgry>
+  <catgry>
+    <catValu>4</catValu>
+    <labl>A few times a year</labl>
+  </catgry>
+  <catgry>
+    <catValu>5</catValu>
+    <labl>Never</labl>
   </catgry>
   <catgry>
     <catValu>7</catValu>
@@ -1368,10 +1380,10 @@ In 2010, this item was collected for sample adults who completed the Quality of 
   <concept vocab="IPUMS">Anxiety Variables -- PERSON</concept>
   <varFormat schema="other" type="numeric"/>
 </var>
-<var ID="DEPRX" dcml="0" files="ExtractData" intrvl="discrete" name="DEPRX">
+<var ID="WORFEELEVL" dcml="0" files="ExtractData" intrvl="discrete" name="WORFEELEVL">
   <location EndPos="127" StartPos="127" width="1"/>
-  <labl>Take medication for depression</labl>
-  <txt><![CDATA[Respondents reported whether they took medication for depression.
+  <labl>Level of worried, nervous, or anxious feelings, last time</labl>
+  <txt><![CDATA[Respondents reported the level of their feelings of worry, nervousness, or anxiety. This question was only asked of respondents who reported feeling worried, nervous, or anxious (WORFREQ) or who took medication for those feelings (WORRX).
 
 In 2010, this item was collected for sample adults who completed the Quality of Life supplement (administered to approximately a quarter of sample adults). In 2011-2017, this item was collected for sample adults who completed the Adult Functioning and Disability supplement (administered to a subset of sample adults). Beginning in 2018, this item was included on the sample adult questionnaire.]]></txt>
   <catgry>
@@ -1380,11 +1392,95 @@ In 2010, this item was collected for sample adults who completed the Quality of 
   </catgry>
   <catgry>
     <catValu>1</catValu>
-    <labl>No</labl>
+    <labl>A lot</labl>
   </catgry>
   <catgry>
     <catValu>2</catValu>
-    <labl>Yes</labl>
+    <labl>A little</labl>
+  </catgry>
+  <catgry>
+    <catValu>3</catValu>
+    <labl>Somewhere between a little and a lot</labl>
+  </catgry>
+  <catgry>
+    <catValu>7</catValu>
+    <labl>Unknown-refused</labl>
+  </catgry>
+  <catgry>
+    <catValu>8</catValu>
+    <labl>Unknown-not ascertained</labl>
+  </catgry>
+  <catgry>
+    <catValu>9</catValu>
+    <labl>Unknown-don't know</labl>
+  </catgry>
+  <concept vocab="IPUMS">Anxiety Variables -- PERSON</concept>
+  <varFormat schema="other" type="numeric"/>
+</var>
+<var ID="DEPFREQ" dcml="0" files="ExtractData" intrvl="discrete" name="DEPFREQ">
+  <location EndPos="128" StartPos="128" width="1"/>
+  <labl>How often feel depressed</labl>
+  <txt><![CDATA[For sample children ages 5-17 and sample adults, DEPFREQ reports how often they felt depressed. Prior to 2019, DEPFREQ was not asked of sample children.]]></txt>
+  <catgry>
+    <catValu>0</catValu>
+    <labl>NIU</labl>
+  </catgry>
+  <catgry>
+    <catValu>1</catValu>
+    <labl>Daily</labl>
+  </catgry>
+  <catgry>
+    <catValu>2</catValu>
+    <labl>Weekly</labl>
+  </catgry>
+  <catgry>
+    <catValu>3</catValu>
+    <labl>Monthly</labl>
+  </catgry>
+  <catgry>
+    <catValu>4</catValu>
+    <labl>A few times a year</labl>
+  </catgry>
+  <catgry>
+    <catValu>5</catValu>
+    <labl>Never</labl>
+  </catgry>
+  <catgry>
+    <catValu>7</catValu>
+    <labl>Unknown-refused</labl>
+  </catgry>
+  <catgry>
+    <catValu>8</catValu>
+    <labl>Unknown-not ascertained</labl>
+  </catgry>
+  <catgry>
+    <catValu>9</catValu>
+    <labl>Unknown-don't know</labl>
+  </catgry>
+  <concept vocab="IPUMS">Depression Variables -- PERSON</concept>
+  <varFormat schema="other" type="numeric"/>
+</var>
+<var ID="DEPFEELEVL" dcml="0" files="ExtractData" intrvl="discrete" name="DEPFEELEVL">
+  <location EndPos="129" StartPos="129" width="1"/>
+  <labl>Level of depression, last time depressed</labl>
+  <txt><![CDATA[Respondents reported whether their level of depression, the last time they felt depressed, was "a little," "a lot," or "somewhere in between a little and a lot." This question was only asked of respondents who reported feeling depressed (DEPFREQ) or who acknowledged taking medication for depression (DEPRX).
+
+In 2010, this item was collected for sample adults who completed the Quality of Life supplement (administered to approximately a quarter of sample adults). In 2011-2017, this item was collected for sample adults who completed the Adult Functioning and Disability supplement (administered to a subset of sample adults). Beginning in 2018, this item was included on the sample adult questionnaire.]]></txt>
+  <catgry>
+    <catValu>0</catValu>
+    <labl>NIU</labl>
+  </catgry>
+  <catgry>
+    <catValu>1</catValu>
+    <labl>A little</labl>
+  </catgry>
+  <catgry>
+    <catValu>2</catValu>
+    <labl>A lot</labl>
+  </catgry>
+  <catgry>
+    <catValu>3</catValu>
+    <labl>Somewhere between little and lot</labl>
   </catgry>
   <catgry>
     <catValu>7</catValu>
