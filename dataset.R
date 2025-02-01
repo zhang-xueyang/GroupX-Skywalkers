@@ -447,87 +447,174 @@ print(or_depression)
 
 #### Visualisations ####
 
-library(gridExtra)  # for arranging multiple plots
+## Working hour and sadness level by sex ##
 
-# 1. Scatterplot with fitted lines for Sadness
-p1 <- ggplot(regression_data, aes(x = log_work_hours, y = sadness_num)) +
-  geom_point(alpha = 0.1) +
-  geom_smooth(method = "lm", color = "red") +
-  labs(title = "Relationship between Working Hours and Sadness",
-       x = "Log(Working Hours)",
-       y = "Sadness Level") +
-  theme_minimal()
+# Prepare the data
+plot_data <- filtered_data %>%
+  filter(!is.na(WORK_HOURS), !is.na(ASAD), !is.na(SEX)) %>%
+  mutate(
+    # Create work hour groups
+    work_group = cut(WORK_HOURS, 
+                     breaks = c(0, 20, 35, 40, 48, 60, Inf),
+                     labels = c("≤20", "21-35", "36-40", "41-48", "49-60", ">60"),
+                     include.lowest = TRUE),
+    sex_label = factor(ifelse(SEX == 1, "Male", "Female"))
+  ) %>%
+  group_by(work_group, sex_label) %>%
+  summarize(
+    mean_sadness = mean(ASAD, na.rm = TRUE),
+    se_sadness = sd(ASAD, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = 'drop'
+  )
 
-# 2. Predicted probabilities for medication use
-# Create prediction data
-pred_data <- data.frame(
-  log_work_hours = seq(min(regression_data$log_work_hours), 
-                       max(regression_data$log_work_hours), 
-                       length.out = 100),
-  age_num = mean(regression_data$age_num),
-  sex_dummy = mean(regression_data$sex_dummy),
-  education_num = mean(regression_data$education_num),
-  health_num = mean(regression_data$health_num)
-)
-
-# Get predictions for anxiety
-pred_data$pred_anxiety <- predict(model_anxiety, 
-                                  newdata = pred_data, 
-                                  type = "response")
-
-# Get predictions for depression
-pred_data$pred_depression <- predict(model_depression, 
-                                     newdata = pred_data, 
-                                     type = "response")
-
-# Plot predicted probabilities
-p2 <- ggplot(pred_data, aes(x = log_work_hours)) +
-  geom_line(aes(y = pred_anxiety, color = "Anxiety Med"), size = 1) +
-  geom_line(aes(y = pred_depression, color = "Depression Med"), size = 1) +
-  labs(title = "Predicted Probabilities of Medication Use",
-       x = "Log(Working Hours)",
-       y = "Predicted Probability",
-       color = "Medication Type") +
-  theme_minimal()
-
-# 3. Coefficient plot
-# Prepare coefficient data
-coef_data <- data.frame(
-  Variable = rep("Log(Working Hours)", 3),
-  Model = c("Sadness", "Anxiety Med", "Depression Med"),
-  Coefficient = c(coef(model_sadness)[2], 
-                  coef(model_anxiety)[2], 
-                  coef(model_depression)[2]),
-  SE = c(sqrt(diag(vcov(model_sadness)))[2],
-         sqrt(diag(vcov(model_anxiety)))[2],
-         sqrt(diag(vcov(model_depression)))[2])
-)
-
-p3 <- ggplot(coef_data, aes(x = Model, y = Coefficient)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = Coefficient - 1.96*SE, 
-                    ymax = Coefficient + 1.96*SE), 
-                width = 0.2) +
-  labs(title = "Working Hours Coefficients Across Models",
-       x = "",
-       y = "Coefficient Estimate") +
+# Create the plot
+ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = sex_label)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = mean_sadness - se_sadness, 
+                    ymax = mean_sadness + se_sadness),
+                position = position_dodge(width = 0.9),
+                width = 0.25) +
+  scale_fill_manual(values = c("Male" = "#BCD1BC", "Female" = "pink")) +
+  labs(
+    title = "Average Sadness Level by Working Hours and Sex",
+    x = "Working Hours per Week",
+    y = "Average Sadness Level",
+    fill = "Sex"
+  ) +
   theme_minimal() +
-  coord_flip()
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    legend.position = "top"
+  ) +
+  scale_y_continuous(
+    limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
+  )
 
-# Arrange plots
-grid.arrange(p1, p2, p3, ncol = 2)
-
-# Save plots if needed
-ggsave("working_hours_mental_health.png", 
-       arrangeGrob(p1, p2, p3, ncol = 2), 
-       width = 12, height = 8)
-
-
-
-
-
+# Optional: Add sample sizes to the plot data
+print("Sample sizes for each group:")
+print(plot_data %>% select(work_group, sex_label, n))
 
 
+## Working hour and sadness level by edu level ##
+
+# Prepare the data
+plot_data <- filtered_data %>%
+  filter(!is.na(WORK_HOURS), !is.na(ASAD), !is.na(EDUCATION)) %>%
+  mutate(
+    # Create work hour groups
+    work_group = cut(WORK_HOURS, 
+                     breaks = c(0, 20, 35, 40, 48, 60, Inf),
+                     labels = c("≤20", "21-35", "36-40", "41-48", "49-60", ">60"),
+                     include.lowest = TRUE),
+    # Create meaningful education labels
+    educ_label = case_when(
+      EDUCATION == 1 ~ "No School",
+      EDUCATION == 2 ~ "Elementary",
+      EDUCATION == 3 ~ "Middle School",
+      EDUCATION == 4 ~ "Some High School",
+      EDUCATION == 5 ~ "High School",
+      EDUCATION == 6 ~ "Some College",
+      EDUCATION == 7 ~ "Bachelors",
+      EDUCATION == 8 ~ "Graduate"
+    )
+  ) %>%
+  group_by(work_group, educ_label) %>%
+  summarize(
+    mean_sadness = mean(ASAD, na.rm = TRUE),
+    se_sadness = sd(ASAD, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = 'drop'
+  )
+
+# Create the plot
+ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = mean_sadness - se_sadness, 
+                    ymax = mean_sadness + se_sadness),
+                position = position_dodge(width = 0.9),
+                width = 0.25) +
+  scale_fill_brewer(palette = "Set2") +  # Use a color palette suitable for multiple categories
+  labs(
+    title = "Average Sadness Level by Working Hours and Education Level",
+    x = "Working Hours per Week",
+    y = "Average Sadness Level",
+    fill = "Education Level"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    legend.position = "right"
+  ) +
+  scale_y_continuous(
+    limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
+  )
+
+# Optional: Add sample sizes to the plot data
+print("Sample sizes for each group:")
+print(plot_data %>% select(work_group, educ_label, n))
+
+
+
+## Reduced edu level ##
+
+# Prepare the data with fewer education categories
+plot_data <- filtered_data %>%
+  filter(!is.na(WORK_HOURS), !is.na(ASAD), !is.na(EDUCATION)) %>%
+  # Only include complete education levels
+  filter(EDUCATION %in% c(5, 7, 8)) %>%  # High School, Bachelors, Graduate
+  mutate(
+    # Create work hour groups
+    work_group = cut(WORK_HOURS, 
+                     breaks = c(0, 20, 35, 40, 48, 60, Inf),
+                     labels = c("≤20", "21-35", "36-40", "41-48", "49-60", ">60"),
+                     include.lowest = TRUE),
+    # Create simplified education labels
+    educ_label = case_when(
+      EDUCATION == 5 ~ "High School",
+      EDUCATION == 7 ~ "Bachelors",
+      EDUCATION == 8 ~ "Graduate"
+    ) %>% factor(levels = c("High School", "Bachelors", "Graduate"))
+  ) %>%
+  group_by(work_group, educ_label) %>%
+  summarize(
+    mean_sadness = mean(ASAD, na.rm = TRUE),
+    se_sadness = sd(ASAD, na.rm = TRUE) / sqrt(n()),
+    n = n(),
+    .groups = 'drop'
+  )
+
+# Create the plot
+ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_errorbar(aes(ymin = mean_sadness - se_sadness, 
+                    ymax = mean_sadness + se_sadness),
+                position = position_dodge(width = 0.9),
+                width = 0.25) +
+  scale_fill_manual(values = c("High School" = "royalblue", 
+                               "Bachelors" = "#BCD1BC", 
+                               "Graduate" = "pink")) +
+  labs(
+    title = "Average Sadness Level by Working Hours and Education Level",
+    x = "Working Hours per Week",
+    y = "Average Sadness Level",
+    fill = "Education Level"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank(),
+    legend.position = "top"
+  ) +
+  scale_y_continuous(
+    limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
+  )
+
+# Print sample sizes
+print("Sample sizes for each group:")
+print(plot_data %>% select(work_group, educ_label, n))
 
 
 
@@ -536,3 +623,155 @@ ggsave("working_hours_mental_health.png",
 
 
 
+
+
+## Sadness levels ##
+
+# Version with percentage labels
+hist_with_labels <- filtered_data %>%
+  group_by(ASAD) %>%
+  summarize(count = n()) %>%
+  mutate(percentage = count/sum(count) * 100) %>%
+  ggplot(aes(x = factor(ASAD), y = percentage)) +
+  geom_bar(stat = "identity", fill = "#BCD1BC") +
+  geom_text(aes(label = sprintf("%.1f%%", percentage)), 
+            vjust = -0.5) +
+  labs(
+    title = "Distribution of Sadness Levels",
+    x = "Sadness Level (0 = None to 4 = Highest)",
+    y = "Percentage"
+  ) +
+  theme_minimal() +
+  ylim(0, max(filtered_data %>% 
+                group_by(ASAD) %>% 
+                summarize(count = n()) %>% 
+                mutate(percentage = count/sum(count) * 100) %>% 
+                pull(percentage)) * 1.2)
+
+# By sex with percentage labels - corrected version
+hist_by_sex_labels <- filtered_data %>%
+  mutate(sex_label = ifelse(SEX == 1, "Male", "Female")) %>%  # Create labels first
+  group_by(sex_label, ASAD) %>%
+  summarize(count = n(), .groups = 'drop') %>%
+  group_by(sex_label) %>%
+  mutate(percentage = count/sum(count) * 100) %>%
+  ggplot(aes(x = factor(ASAD), y = percentage, fill = sex_label)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_text(aes(label = sprintf("%.1f%%", percentage)),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5) +
+  scale_fill_manual(values = c("Male" = "#BCD1BC", "Female" = "pink")) +
+  labs(
+    title = "Distribution of Sadness Levels by Sex",
+    x = "Sadness Level (0 = None to 4 = Highest)",
+    y = "Percentage",
+    fill = "Sex"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top") +
+  ylim(0, max(filtered_data %>% 
+                mutate(sex_label = ifelse(SEX == 1, "Male", "Female")) %>%
+                group_by(sex_label, ASAD) %>%
+                summarize(count = n()) %>%
+                group_by(sex_label) %>%
+                mutate(percentage = count/sum(count) * 100) %>%
+                pull(percentage)) * 1.2)
+
+# Display both plots side by side
+grid.arrange(hist_with_labels, hist_by_sex_labels, ncol = 2)
+
+# Print summary statistics
+summary_stats <- filtered_data %>%
+  group_by(SEX) %>%
+  summarize(
+    mean_sadness = mean(ASAD, na.rm = TRUE),
+    sd_sadness = sd(ASAD, na.rm = TRUE),
+    n = n()
+  ) %>%
+  mutate(sex_label = ifelse(SEX == 1, "Male", "Female"))
+
+print("Summary Statistics:")
+print(summary_stats)
+
+
+
+
+
+
+
+
+# 1. Forest Plot of Regression Coefficients
+
+# Extract coefficients from the models
+sadness_coef <- tidy(model_sadness, conf.int = TRUE)
+worry_coef <- tidy(model_worry, conf.int = TRUE)
+depression_coef <- tidy(model_depression, conf.int = TRUE)
+
+# Prepare data for plotting
+sadness_coef$model <- "Sadness (Linear)"
+worry_coef$model <- "Worry (Logistic)"
+depression_coef$model <- "Depression (Logistic)"
+
+# Combine coefficients
+combined_coefs <- rbind(
+  sadness_coef, 
+  worry_coef, 
+  depression_coef
+)
+
+# Filter out intercept and only keep key predictors
+key_predictors <- c(
+  "log_work_hours", 
+  "age_num", 
+  "sex_dummy", 
+  "education_num", 
+  "health_num", 
+  "marital_num"
+)
+combined_coefs_filtered <- combined_coefs[combined_coefs$term %in% key_predictors,]
+
+# Create forest plot
+ggplot(combined_coefs_filtered, aes(x = estimate, y = term, color = model)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), height = 0.2, position = position_dodge(width = 0.5)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(
+    title = "Regression Coefficients Across Mental Health Models",
+    x = "Coefficient Estimate",
+    y = "Predictors"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+
+
+
+# 2. Odds Ratio Plot for Logistic Regression Models
+
+# Prepare odds ratio data
+worry_or <- or_worry[rownames(or_worry) %in% c("work_groupPart-time", "work_groupModerate-Over", "work_groupHigh-Over", "work_groupExcessive-Over"), ]
+depression_or <- or_depression[rownames(or_depression) %in% c("work_groupPart-time", "work_groupModerate-Over", "work_groupHigh-Over", "work_groupExcessive-Over"), ]
+
+# Add model names
+worry_or$model <- "Worry"
+depression_or$model <- "Depression"
+worry_or$work_group <- rownames(worry_or)
+depression_or$work_group <- rownames(depression_or)
+
+# Combine odds ratio data
+combined_or <- rbind(worry_or, depression_or)
+
+# Create odds ratio plot
+ggplot(combined_or, aes(x = work_group, y = OR, color = model, group = model)) +
+  geom_point(position = position_dodge(width = 0.5)) +
+  geom_line(position = position_dodge(width = 0.5)) +
+  geom_errorbar(aes(ymin = CI_Lower, ymax = CI_Upper), width = 0.2, position = position_dodge(width = 0.5)) +
+  geom_hline(yintercept = 1, linetype = "dashed") +
+  scale_y_log10() +
+  labs(
+    title = "Odds Ratios for Mental Health Outcomes by Work Hours",
+    x = "Work Hour Group",
+    y = "Odds Ratio (log scale)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
