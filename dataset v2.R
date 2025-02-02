@@ -277,41 +277,21 @@ model_depression <- svyglm(
 )
 
 # Create regression output table
-stargazer(model_sadness, model_worry, model_depression,
+stargazer(model_sadness, model_depression,
           type = "text",
           title = "Regression Results",
-          column.labels = c("Sadness", "Worry", "Depression"),
-          column.separate = c(1,1,1),
+          column.labels = c("Sadness", "Depression"),
+          column.separate = c(1,1),
           model.names = FALSE,
           dep.var.labels = c("Mental Health Outcomes"),
           add.lines = list(
-            c("Model Type", "Linear", "Logistic", "Logistic")),
+            c("Model Type", "Linear", "Logistic")),
           covariate.labels = c("Log(Working Hours)",
                                "Age",
                                "Sex (Female)",
                                "Education Level",
                                "Health Status",
                                "Marital Status"))
-
-# For logistic models, calculate odds ratios
-get_or_ci <- function(model) {
-  coef <- coef(model)
-  se <- sqrt(diag(vcov(model)))
-  ci_lower <- exp(coef - 1.96 * se)
-  ci_upper <- exp(coef + 1.96 * se)
-  or <- exp(coef)
-  return(data.frame(OR = or, CI_Lower = ci_lower, CI_Upper = ci_upper))
-}
-
-# Get odds ratios for binary outcome models
-or_worry <- get_or_ci(model_worry)
-or_depression <- get_or_ci(model_depression)
-
-# Print odds ratios
-print("Odds Ratios and 95% CI for Worry Model:")
-print(or_worry)
-print("Odds Ratios and 95% CI for Depression Model:")
-print(or_depression)
 
 
 
@@ -423,26 +403,6 @@ stargazer(model_sadness, model_worry, model_depression,
                                "Health Status",
                                "Marital Status"))
 
-# For logistic models, calculate odds ratios
-get_or_ci <- function(model) {
-  coef <- coef(model)
-  se <- sqrt(diag(vcov(model)))
-  ci_lower <- exp(coef - 1.96 * se)
-  ci_upper <- exp(coef + 1.96 * se)
-  or <- exp(coef)
-  return(data.frame(OR = or, CI_Lower = ci_lower, CI_Upper = ci_upper))
-}
-
-# Get odds ratios for binary outcome models
-or_worry <- get_or_ci(model_worry)
-or_depression <- get_or_ci(model_depression)
-
-# Print odds ratios
-print("Odds Ratios and 95% CI for Worry Model:")
-print(or_worry)
-print("Odds Ratios and 95% CI for Depression Model:")
-print(or_depression)
-
 
 
 #### Visualisations ####
@@ -492,9 +452,6 @@ ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = sex_label)) +
     limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
   )
 
-# Optional: Add sample sizes to the plot data
-print("Sample sizes for each group:")
-print(plot_data %>% select(work_group, sex_label, n))
 
 
 ## Working hour and sadness level by edu level ##
@@ -552,10 +509,6 @@ ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
     limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
   )
 
-# Optional: Add sample sizes to the plot data
-print("Sample sizes for each group:")
-print(plot_data %>% select(work_group, educ_label, n))
-
 
 
 ## Reduced edu level ##
@@ -611,17 +564,6 @@ ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
   scale_y_continuous(
     limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
   )
-
-# Print sample sizes
-print("Sample sizes for each group:")
-print(plot_data %>% select(work_group, educ_label, n))
-
-
-
-
-
-
-
 
 
 
@@ -695,10 +637,7 @@ print(summary_stats)
 
 
 
-
-
-
-
+## Model Visualisation ##
 
 # 1. Forest Plot of Regression Coefficients
 
@@ -775,3 +714,47 @@ ggplot(combined_or, aes(x = work_group, y = OR, color = model, group = model)) +
   ) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
+
+
+
+
+
+
+
+
+
+
+# First convert to data frame
+regression_df <- as.data.frame(regression_data)
+
+# Create the groups for working hours
+work_hours_by_group <- regression_df %>%
+  mutate(
+    Part_time = ifelse(HOURSWRK < 35, HOURSWRK, NA),
+    Standard = ifelse(HOURSWRK >= 35 & HOURSWRK <= 40, HOURSWRK, NA),
+    Moderate_Over = ifelse(HOURSWRK > 40 & HOURSWRK <= 48, HOURSWRK, NA),
+    High_Over = ifelse(HOURSWRK > 48 & HOURSWRK <= 60, HOURSWRK, NA),
+    Excessive_Over = ifelse(HOURSWRK > 60, HOURSWRK, NA)
+  )
+
+# Combine with original variables
+final_df <- regression_df %>%
+  select(AGE, SEX, MARST, EDUC, EMPSTAT, HEALTH, ASAD, WORFREQ, WORFEELEVL, DEPFREQ, 
+         DEPFEELEVL, EDUCATION, EMPLOYMENT, HEALTH_STATUS, SADNESS, WORK_HOURS_CAT, 
+         WORRY_FREQ, DEPRESS_FREQ, WORRY_LEVEL, DEPRESS_LEVEL, MARITAL,
+         sex_dummy, education_num, health_num, age_num, marital_num, sadness_num, 
+         worry_binary, depress_binary) %>%
+  cbind(work_hours_by_group[,c("Part_time", "Standard", "Moderate_Over", "High_Over", "Excessive_Over")])
+
+# Generate descriptive statistics
+library(stargazer)
+stargazer(final_df, 
+          type = "html",
+          title = "Descriptive Statistics",
+          digits = 2,
+          summary.stat = c("n", "mean", "sd", "min", "p25", "median", "p75", "max"),
+          out = "descriptive_statistics.doc")
+
+
+
+
