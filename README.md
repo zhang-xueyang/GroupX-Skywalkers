@@ -15,9 +15,10 @@ working hours (HOURSWRK): Total hours worked last week or usually
 educational attainment (EDUC): categorical variable to control for the effect of education      
 age (AGE): continuous variable to control for the impact of age-related differences      
 sex (SEX)：binary variable to control for gender differences in work-life pressures      
-health status (HEALTH)      
-employment status (EMPSTAT): Employment status in past 1 to 2 weeks      
-marital status (MARSTAT): married individuals may have different work commitments compared to single individuals      
+marital status (MARSTAT): married individuals may have different work commitments compared to single individuals 
+
+*Mediation Variable*:
+health status (HEALTH)   
 
 - **Countries**: USA
 - **Years**: 2013-2018
