@@ -1,5 +1,4 @@
 # Download packages---------
-
 packages <- c("dplyr", "ggplot2", "broom", "tidyr","srvyr", "NHANES", "kableExtra")
 package.check <- lapply(
   packages,
@@ -225,7 +224,7 @@ wald_test_depression <- regTermTest(model_depression, "work_group")
 
 # Create table with test results
 stargazer(model_sadness, model_depression,
-          type = "html",
+          type = "text",
           out = "regression_results_1.doc",
           title = "Regression Results",
           column.labels = c("Sadness", "Depression"),
@@ -337,7 +336,7 @@ stargazer(
 
 stargazer(
   sex_results[["0"]]$depression, sex_results[["1"]]$depression,
-  type = "html",
+  type = "text",
   out = "regression_results_3.doc",
   title = "Heterogeneity Analysis by Sex - Depression Model",
   column.labels = c("Female", "Male"),
@@ -559,7 +558,7 @@ stargazer(
 
 stargazer(
   education_results[["0"]]$depression, education_results[["1"]]$depression,
-  type = "html",
+  type = "text",
   out = "regression_results_5.doc",
   title = "Heterogeneity Analysis by Education - Depression Model",
   column.labels = c("Low Education", "High Education"),
@@ -1171,8 +1170,9 @@ final_df <- regression_df %>%
 
 # Generate descriptive statistics
 stargazer(final_df, 
-          type = "html",
+          type = "text",
           title = "Descriptive Statistics",
           digits = 2,
           summary.stat = c("n", "mean", "sd", "min", "median", "max"),
           out = "descriptive_statistics.doc")
+
