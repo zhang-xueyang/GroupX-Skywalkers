@@ -1,5 +1,17 @@
-# Download packages---------
+---
+title: "final data"
+author: "GroupX"
+date: "2025-02-09"
+output: html_document
+---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Download Packages
+
+```{r, include=FALSE}
 packages <- c("dplyr", "ggplot2", "broom", "tidyr","srvyr", "NHANES", "kableExtra")
 package.check <- lapply(
   packages,
@@ -14,14 +26,20 @@ library(survey)
 library(ipumsr)
 library(lavaan)
 
+```
 
+# 2. Load Data
 
-# Load data ------
-
+```{r }
 ddi_new <- read_ipums_ddi("nhis_00005.xml")
 data_ipums_new <- read_ipums_micro(ddi_new)
+```
 
-## Apply filters ------
+# 3. Preprocess Data
+
+## Apply Filters
+
+```{r }
 filtered_data <- data_ipums_new %>%
   filter(
     YEAR >= 2013 & YEAR <= 2018,
@@ -37,8 +55,11 @@ filtered_data <- data_ipums_new %>%
   )
 
 filtered_data$HOURSWRK[filtered_data$HOURSWRK >= 95] <- 95
+```
 
-## Regroup Education ------
+## Regroup Education
+
+```{r }
 filtered_data$EDUCATION = filtered_data$EDUC
 no_school <- c(102)  
 elementary <- c(104, 105, 106, 107, 108, 109)  
@@ -60,21 +81,25 @@ filtered_data$EDUCATION[filtered_data$EDUCATION %in% graduate] = 8
 
 filtered_data$HEALTH_STATUS = filtered_data$HEALTH
 filtered_data$SADNESS = filtered_data$ASAD  # 0-4
-filtered_data$ANXIETY_MED = filtered_data$WORRX    # 1-2
-filtered_data$DEPRESSION_MED = filtered_data$DEPRX # 1-2
 
 filtered_data$WORK_HOURS = filtered_data$HOURSWRK
 filtered_data$WORK_HOURS[filtered_data$WORK_HOURS >= 95] = 95
+```
 
-## Create work hours categories ------
+## Create Work Hour Categories
+
+```{r }
 filtered_data$WORK_HOURS_CAT <- NA
 filtered_data$WORK_HOURS_CAT[filtered_data$WORK_HOURS <= 20] = 1
 filtered_data$WORK_HOURS_CAT[filtered_data$WORK_HOURS > 20 & filtered_data$WORK_HOURS <= 35] = 2
 filtered_data$WORK_HOURS_CAT[filtered_data$WORK_HOURS > 35 & filtered_data$WORK_HOURS <= 40] = 3
 filtered_data$WORK_HOURS_CAT[filtered_data$WORK_HOURS > 40 & filtered_data$WORK_HOURS <= 60] = 4
 filtered_data$WORK_HOURS_CAT[filtered_data$WORK_HOURS > 60] = 5
+```
 
-## Recode all variables and create new ones within the data frame ------
+## Recode All Variables and Create New Ones
+
+```{r }
 filtered_data <- filtered_data %>%
   mutate(
     # Education grouping
@@ -126,12 +151,18 @@ filtered_data <- filtered_data %>%
       TRUE ~ NA_real_
     )
   )
+```
 
-## Create final dataset with numeric variables ------
+## Create Final Dataset with Numeric Variables
+
+```{r }
 final_data <- dplyr::select(filtered_data, YEAR, SERIAL,AGE,SEX,MARITAL, EDUCATION, WORK_HOURS, WORK_HOURS_CAT,
 HEALTH_STATUS, SADNESS,SAMPWEIGHT, STRATA,PSU)
+```
 
-## Examine distributions ------
+## Examine Distributions
+
+```{r }
 ggplot(filtered_data, aes(WORK_HOURS)) +
   geom_histogram(binwidth = 0.2, fill = '#BCD1BC', color = "#BCD1BC") +
   labs(title = "Working Hours Distribution", 
@@ -143,11 +174,13 @@ ggplot(filtered_data, aes(log(WORK_HOURS))) +
   labs(title = "Log-transformed Working Hours Distribution", 
        x = "Log(Working Hours)", 
        y = "Count")
+```
 
+# 4. Model Fitting
 
+## Prepare Models
 
-# Multivariate and Logistic Regression Models with Grouped Working Hours ------
-
+```{r }
 # Prepare data with proper coding and work hour groups
 regression_data <- filtered_data %>%
   filter(WORK_HOURS >= 5) %>%
@@ -193,10 +226,13 @@ nhis_design <- svydesign(
   data = regression_data,
   nest = TRUE
 )
+```
 
-## Fit models ------
+## Run Models
 
-### 1. Linear model for Sadness ------
+### 1). Multivariate Linear Regression Model for Sadness
+
+```{r }
 model_sadness <- svyglm(
   sadness_num ~ 
     work_group + 
@@ -206,8 +242,11 @@ model_sadness <- svyglm(
     marital_num,
   design = nhis_design
 )
+```
 
-### 2. Logistic regression for Depression ------
+### 2). Logistic Regression Model for Depression
+
+```{r }
 model_depression <- svyglm(
   depress_binary ~ 
     work_group + 
@@ -218,14 +257,20 @@ model_depression <- svyglm(
   design = nhis_design,
   family = quasibinomial()
 )
+```
 
-# Get test results first
+## Extract Test Results
+
+```{r }
 f_test_sadness <- regTermTest(model_sadness, "work_group")
 wald_test_depression <- regTermTest(model_depression, "work_group")
+```
 
-# Create table with test results
+## Output Test Results
+
+```{r }
 stargazer(model_sadness, model_depression,
-          type = "html",
+          type = "text",
           out = "regression_results_1.doc",
           title = "Regression Results",
           column.labels = c("Sadness", "Depression"),
@@ -248,10 +293,13 @@ stargazer(model_sadness, model_depression,
                                "Sex",
                                "Education Level",
                                "Marital Status"))
+```
 
+# 5. Heterogeneity Analysis
 
-## Heterogeneity Analysis for sex--------------
+## 1). Heterogeneity Analysis for Sex
 
+```{r }
 # Function to run models for subgroup with PSU filtering
 run_subgroup_models <- function(data, subgroup_var) {
   subgroup_levels <- unique(data[[subgroup_var]])
@@ -318,7 +366,7 @@ sex_results <- run_subgroup_models(regression_data, "sex_dummy")
 # Create summary tables for sex analysis
 stargazer(
   sex_results[["0"]]$sadness, sex_results[["1"]]$sadness,
-  type = "html",
+  type = "text",
   out = "regression_results_2.doc",
   title = "Heterogeneity Analysis by Sex - Sadness Model",
   column.labels = c("Female", "Male"),
@@ -337,7 +385,7 @@ stargazer(
 
 stargazer(
   sex_results[["0"]]$depression, sex_results[["1"]]$depression,
-  type = "html",
+  type = "text",
   out = "regression_results_3.doc",
   title = "Heterogeneity Analysis by Sex - Depression Model",
   column.labels = c("Female", "Male"),
@@ -353,9 +401,13 @@ stargazer(
       sex_results[["1"]]$n)
   )
 )
+```
 
-### Chow Test of Sex Heterogeneity -------------
+### Significance Test of Sex Heterogeneity
 
+#### Prepare Data
+
+```{r }
 # Count PSUs per stratum for each sex group
 psu_count_female <- subset(regression_data, sex_dummy == 0) %>%
   group_by(STRATA) %>%
@@ -406,8 +458,11 @@ design_pooled <- svydesign(
   data = regression_data_pooled,
   nest = TRUE
 )
+```
 
-#### Chow Test for Sadness Model -------------
+#### Chow Test for Sadness Model
+
+```{r }
 # Run separate models
 model_female <- svyglm(
   sadness_num ~ work_group + age_num + education_num + marital_num,
@@ -446,9 +501,11 @@ cat("\nChow Test Results for Sex Heterogeneity (Sadness Model):\n")
 cat("F-statistic:", f_stat, "\n")
 cat("Degrees of freedom:", df1, "and", df2, "\n")
 cat("p-value:", p_value, "\n")
+```
 
+#### Chow Test for Depression Model
 
-#### Chow Test for Depression Model -------------
+```{r }
 # Run separate models for depression
 model_female_dep <- svyglm(
   depress_binary ~ work_group + age_num + education_num + marital_num,
@@ -491,9 +548,11 @@ cat("F-statistic:", f_stat_dep, "\n")
 cat("Degrees of freedom:", df1_dep, "and", df2_dep, "\n")
 cat("p-value:", p_value_dep, "\n")
 
+```
 
+## 2). Heterogeneity Analysis for Education
 
-## Heterogeneity Analysis for education --------------
+```{r }
 # Calculate the total number of observations
 total_obs <- nrow(regression_data)
 target_size <- total_obs / 2
@@ -540,7 +599,7 @@ education_results <- run_subgroup_models(regression_data, "education_binary")
 # Create summary tables for education analysis
 stargazer(
   education_results[["0"]]$sadness, education_results[["1"]]$sadness,
-  type = "html",
+  type = "text",
   out = "regression_results_4.doc",
   title = "Heterogeneity Analysis by Education - Sadness Model",
   column.labels = c("Low Education", "High Education"),
@@ -559,7 +618,7 @@ stargazer(
 
 stargazer(
   education_results[["0"]]$depression, education_results[["1"]]$depression,
-  type = "html",
+  type = "text",
   out = "regression_results_5.doc",
   title = "Heterogeneity Analysis by Education - Depression Model",
   column.labels = c("Low Education", "High Education"),
@@ -576,9 +635,13 @@ stargazer(
   )
 )
 
+```
 
-### Chow test of Education Heterogeneity ---------
+## Significance Test of Education Heterogeneity
 
+#### Prepare Data
+
+```{r }
 # First, count PSUs per stratum for each education group
 psu_count_low <- subset(regression_data, education_binary == 0) %>%
   group_by(STRATA) %>%
@@ -618,7 +681,11 @@ design_high <- svydesign(
   nest = TRUE
 )
 
-#### Chow test for Sadness Model ----------
+```
+
+#### Chow Test for Sadness Model
+
+```{r }
 # Run separate regressions
 model_low_edu <- svyglm(
   sadness_num ~ work_group + age_num + sex_dummy + health_num + marital_num,
@@ -672,8 +739,11 @@ cat("F-statistic:", f_stat, "\n")
 cat("Degrees of freedom:", df1, "and", df2, "\n")
 cat("p-value:", p_value, "\n")
 
+```
 
-#### Chow test for Depression Model ----------
+#### Chow Test for Depression Model
+
+```{r }
 # Run separate regressions for depression
 model_low_edu_dep <- svyglm(
   depress_binary ~ work_group + age_num + sex_dummy + health_num + marital_num,
@@ -720,10 +790,14 @@ cat("F-statistic:", f_stat_dep, "\n")
 cat("Degrees of freedom:", df1_dep, "and", df2_dep, "\n")
 cat("p-value:", p_value_dep, "\n")
 
+```
 
-## Mediation Test for Sadness -------------
+# 6. Mediation Test
 
-# Function to perform Sobel test with survey weights for categorical predictors
+### Define Function to perform Sobel Test
+
+```{r }
+
 sobel_test_categorical <- function(model_m, model_y, treatment_levels) {
   results <- list()
   
@@ -751,8 +825,12 @@ sobel_test_categorical <- function(model_m, model_y, treatment_levels) {
   }
   return(results)
 }
+```
 
-# Run models for health status mediation
+## 1). Mediation Test for Sadness
+
+```{r }
+
 # Path a: work hours -> health
 model_health <- svyglm(
   HEALTH_STATUS ~ work_group + age_num + sex_dummy + education_num,
@@ -802,9 +880,11 @@ print(knitr::kable(results_df,
                    digits = 3))
 
 
+```
 
-## Mediation Test for Depression Level -----------
-# Run models for health status mediation  
+## 2). Mediation Test for Depression
+
+```{r }
 # Path a: work hours -> health
 model_health <- svyglm(
   HEALTH_STATUS ~ work_group + age_num + sex_dummy + education_num,
@@ -854,13 +934,15 @@ print(knitr::kable(results_df,
                    caption = "Complete Mediation Analysis Results",
                    digits = 3))
 
+```
 
+# 7. Data Visualization
 
-# Data Visualization ------
+## 1). Working Hour and Sadness Level by Sex
 
-## Working hour and sadness level by sex ------
+### Prepare Data
 
-# Prepare the data
+```{r }
 plot_data <- filtered_data %>%
   filter(!is.na(WORK_HOURS), !is.na(ASAD), !is.na(SEX)) %>%
   mutate(
@@ -878,8 +960,11 @@ plot_data <- filtered_data %>%
     n = n(),
     .groups = 'drop'
   )
+```
 
-# Create the plot
+### Create Plot
+
+```{r }
 ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = sex_label)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   geom_errorbar(aes(ymin = mean_sadness - se_sadness, 
@@ -902,11 +987,13 @@ ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = sex_label)) +
   scale_y_continuous(
     limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
   )
+```
 
+## 2). Working Hour and Depression Level by Sex
 
-## Working hour and depression level by sex ------
+### Prepare Data
 
-# Prepare the data
+```{r }
 plot_data <- filtered_data %>%
   filter(!is.na(WORK_HOURS), !is.na(DEPFREQ), !is.na(SEX)) %>%
   mutate(
@@ -924,8 +1011,11 @@ plot_data <- filtered_data %>%
     n = n(),
     .groups = 'drop'
   )
+```
 
-# Create the plot
+### Create Plot
+
+```{r }
 ggplot(plot_data, aes(x = work_group, y = mean_dep, fill = sex_label)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   geom_errorbar(aes(ymin = mean_dep - se_dep, 
@@ -948,11 +1038,13 @@ ggplot(plot_data, aes(x = work_group, y = mean_dep, fill = sex_label)) +
   scale_y_continuous(
     limits = c(0, max(plot_data$mean_dep + plot_data$se_dep) * 1.1)
   )
+```
 
+## 3). Working Hour and Sadness Level by Education level
 
-## Working hour and sadness level by edu level ------
+### Prepare Data
 
-# Prepare the data with fewer education categories
+```{r }
 plot_data <- filtered_data %>%
   filter(!is.na(WORK_HOURS), !is.na(ASAD), !is.na(EDUCATION)) %>%
   # Only include complete education levels
@@ -977,8 +1069,11 @@ plot_data <- filtered_data %>%
     n = n(),
     .groups = 'drop'
   )
+```
 
-# Create the plot
+### Create Plot
+
+```{r }
 ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   geom_errorbar(aes(ymin = mean_sadness - se_sadness, 
@@ -1003,11 +1098,13 @@ ggplot(plot_data, aes(x = work_group, y = mean_sadness, fill = educ_label)) +
   scale_y_continuous(
     limits = c(0, max(plot_data$mean_sadness + plot_data$se_sadness) * 1.1)
   )
+```
 
+## 4). Working Hour and Depression Level by Education level
 
-## Working hour and depression level by edu level ------
+### Prepare Data
 
-# Prepare the data with fewer education categories
+```{r }
 plot_data <- filtered_data %>%
   filter(!is.na(WORK_HOURS), !is.na(DEPFREQ), !is.na(EDUCATION)) %>%
   # Only include complete education levels
@@ -1032,8 +1129,11 @@ plot_data <- filtered_data %>%
     n = n(),
     .groups = 'drop'
   )
+```
 
-# Create the plot
+### Create Plot
+
+```{r }
 ggplot(plot_data, aes(x = work_group, y = mean_depression, fill = educ_label)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
   geom_errorbar(aes(ymin = mean_depression - se_depression, 
@@ -1058,12 +1158,13 @@ ggplot(plot_data, aes(x = work_group, y = mean_depression, fill = educ_label)) +
   scale_y_continuous(
     limits = c(0, max(plot_data$mean_depression + plot_data$se_depression) * 1.1)
   )
+```
 
+# 7. Regression Results Visualisation
 
-## Regression Results Visualisation ------
+## 1). Forest Plot of Regression Coefficients
 
-### 1. Forest Plot of Regression Coefficients ------
-
+```{r }
 # Extract coefficients from the models
 sadness_coef <- tidy(model_sadness, conf.int = TRUE)
 depression_coef <- tidy(model_depression, conf.int = TRUE)
@@ -1102,11 +1203,11 @@ ggplot(combined_coefs_filtered, aes(x = estimate, y = term, color = model)) +
   theme_minimal() +
   theme(legend.position = "top")
 
+```
 
+## 2). Odds Ratio Plot for Logistic Regression Models
 
-
-### 2. Odds Ratio Plot for Logistic Regression Models ------
-
+```{r }
 # Get odds ratios and CIs for depression model
 depression_or <- exp(coef(model_depression))
 depression_ci <- exp(confint(model_depression))
@@ -1147,9 +1248,11 @@ ggplot(plot_data, aes(x = work_group, y = OR)) +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
+```
 
-# Descriptive Statistics ------
+## 3). Descriptive Statistics
 
+```{r }
 # First convert to data frame
 regression_df <- as.data.frame(regression_data)
 
@@ -1166,13 +1269,15 @@ work_hours_by_group <- regression_df %>%
 # Combine with original variables
 final_df <- regression_df %>%
   select(WORK_HOURS, WORK_HOURS_CAT, ASAD,DEPFREQ, DEPRESS_FREQ, 
-         EDUCATION,MARITAL, HEALTH, AGE) %>%
+         EDUCATION,MARITAL, HEALTH, AGE, SEX) %>%
   cbind(work_hours_by_group[,c("Part_time", "Standard", "Moderate_Over", "High_Over", "Excessive_Over")])
 
 # Generate descriptive statistics
 stargazer(final_df, 
-          type = "html",
+          type = "text",
           title = "Descriptive Statistics",
           digits = 2,
           summary.stat = c("n", "mean", "sd", "min", "median", "max"),
           out = "descriptive_statistics.doc")
+
+```
