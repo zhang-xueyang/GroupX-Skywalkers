@@ -1,3 +1,4 @@
+<<<<<<< HEAD:Group X Code Scripts.Rmd
 ---
 title: "final data"
 author: "GroupX"
@@ -1280,4 +1281,5 @@ stargazer(final_df,
           summary.stat = c("n", "mean", "sd", "min", "median", "max"),
           out = "descriptive_statistics.doc")
 
+<<<<<<< HEAD:Group X Code Scripts.Rmd
 ```
