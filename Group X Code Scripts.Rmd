@@ -1,6 +1,6 @@
 <<<<<<< HEAD:Group X Code Scripts.Rmd
 ---
-title: "final data"
+title: "Group X Code Scripts"
 author: "GroupX"
 date: "2025-02-09"
 output: html_document
